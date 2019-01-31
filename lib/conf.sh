@@ -20,9 +20,8 @@ non_secrecy(){
         for server in ${cluster_server[@]}
             do 
                 echo "Please input the following password: $userpwd"
-		su - $username -c "exit"
-        	cd /home/hadoop/
-        	ssh-copy-id -i /home/$username/.ssh/id_rsa.pub $username@$server
+		ssh-copy-id -i /home/$username/.ssh/id_rsa.pub $username@$server
+        	# ssh-copy-id -i /home/$username/.ssh/id_rsa.pub $username@$server
             done
     else
         echo "Dont set non_secrecy.Please create username[$username]"
@@ -177,6 +176,12 @@ mapred_site_xml(){
         echo "              <name>mapreduce.framework.name</name>" >> $mapred_site_file
         echo "              <value>yarn</value>" >> $mapred_site_file
         echo "          </property>" >> $mapred_site_file
+
+        echo "          <property>" >> $mapred_site_file
+        echo "              <name>mapred.child.java.opts</name>" >> $mapred_site_file
+        echo "              <value>-Xmx${mapreduce_task_mb}m</value>" >> $mapred_site_file
+        echo "          </property>" >> $mapred_site_file
+
         echo " " >> $mapred_site_file
         echo "</configuration>" >> $mapred_site_file
     else
@@ -281,6 +286,16 @@ yarn(){
 
         echo "    <property>" >> $yarn_site_file
 
+        echo "          <name>yarn.scheduler.minimum-allocation-mb</name>" >> $yarn_site_file
+
+        echo "          <value>$yarn_minimum_mb</value>" >> $yarn_site_file
+
+        echo "          <discription>The default:1024MB</discription>" >> $yarn_site_file
+
+        echo "    </property>" >> $yarn_site_file
+
+        echo "    <property>" >> $yarn_site_file
+
         echo "          <name>yarn.scheduler.maximum-allocation-mb</name>" >> $yarn_site_file
 
         echo "          <value>$yarn_maximum_mb</value>" >> $yarn_site_file
@@ -342,12 +357,73 @@ hadoop_env(){
     if [ -d "/home/$username" ];then
 	hadoop_env_file=/home/$username/hadoop-2.9.2/etc/hadoop/hadoop-env.sh 
 	sed -ri "s/export JAVA_HOME=.+/export JAVA_HOME=\/home\/$username\/jdk1.8.0_171/" $hadoop_env_file
+    sed -ri "s/# export HADOOP_HEAPSIZE.+/export HADOOP_HEAPSIZE=$hadoop_heapsize/" $hadoop_env_file
+    sed -ri "s/export HADOOP_HEAPSIZE.+/export HADOOP_HEAPSIZE=$hadoop_heapsize/" $hadoop_env_file
     else
         echo "Dont add java to hadoop .Please create username[$username]"
     fi
 }
 
+current_xml(){
+    if [ -d "/home/$username" ];then
+        core_site_file=/home/$username/core-site.xml
+        line=$(sed -n "/<configuration>/=" $core_site_file)
+        line_2=$[$line+1]
+        sed -i $line_2',$d' $core_site_file
+        echo "  <property>" >> $core_site_file
 
+        echo "        <name>hadoop.tmp.dir</name>" >> $core_site_file
+
+        echo "        <value>/home/$username/hadoop/tmp</value>" >> $core_site_file
+
+        echo "        <description>Abase for other temporary directories.</description>" >> $core_site_file
+
+        echo "   </property>" >> $core_site_file
+
+        echo "   <property>" >> $core_site_file
+
+        echo "        <name>fs.default.name</name>" >> $core_site_file
+
+        echo "        <value>hdfs://$1:$hdfs_port</value>" >> $core_site_file
+
+        echo "   </property>" >> $core_site_file
+        echo "</configuration>" >> $core_site_file
+
+    else
+        echo "Dont config core-site.xml .Please create username[$username]"
+    fi
+}
+
+synchronization(){
+    if [ -d "/home/$username" ];then
+        hadoop_file=/home/$username/hadoop-2.9.2.tgz
+        java_file=/home/$username/jdk1.8.0_171.tgz
+        hadoop_data_file=/home/$username/hadoop
+        su - $username -c "tar -cvzf hadoop-2.9.2.tgz hadoop-2.9.2"
+        su - $username -c "tar -cvzf jdk1.8.0_171.tgz jdk1.8.0_171"
+        for server in ${syn_server[@]}
+            do
+                echo "scp to $server..."
+                # modify core-site.xml
+                cp -rf /home/$username/hadoop-2.9.2/etc/hadoop/core-site.xml /home/$username/
+                chown -R $username:$username /home/$username/core-site.xml
+                current_xml $server
+                # scp bashrc tar hadoop
+                su - $username -c "scp -r /home/$username/.bashrc $username@$server:/home/$username"
+                su - $username -c "scp -r $hadoop_file/ $username@$server:/home/$username"
+                su - $username -c "scp -r $java_file/ $username@$server:/home/$username"
+                su - $username -c "scp -r $hadoop_data_file $username@$server:/home/$username"
+                # tar hadoop and java
+                su - $username -c "ssh $username@$server 'cd /home/$username && tar -xvzf hadoop-2.9.2.tgz && tar -xvzf jdk1.8.0_171.tgz'"
+                su - $username -c "ssh $username@$server 'rm -rf /home/$username/hadoop-2.9.2.tgz && rm -rf /home/$username/jdk1.8.0_171.tgz'"
+                su - $username -c "scp -r /home/$username/core-site.xml $username@$server:/home/$username/hadoop-2.9.2/etc/hadoop/"
+                su $username -c "ssh $username@$server 'source ~/.bashrc'"
+		rm -rf /home/$username/core-site.xml
+            done
+    else
+        echo "Dont synchronization config .Please create username[$username]"
+    fi
+}
 
 # hadoop_data
 # create_user

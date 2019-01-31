@@ -1,13 +1,5 @@
 *** It is better to build a hadoop cluster with more than 2 machines
 
-cd hadoop_cluster
-
-Please download hadoop-2.9.2 and jdk1.8.0_171 on baidu disk first
-address: https://pan.baidu.com/s/1G3VWiG1FiZjB42tOrMX_GQ 
-Extract the code: al45 
-
-Unzip the package: tar -xvzf package.tgz
-
 
 step 1. pre-configured
 	
@@ -21,6 +13,8 @@ step 1. pre-configured
 		hostnamectl set-hostname hserver1(172.19.0.1)
 		hostnamectl set-hostname hserver2(172.18.2.32)
 		hostnamectl set-hostname hserver3(192.43.2.31)
+
+	or : hostname hserver1 (relogin to take effect)
 
 	b).Modify the hosts
 		vim /etc/hosts [172.19.0.1, 172.18.2.32, 192.43.2.31]   --> :wq(save)
@@ -76,8 +70,12 @@ step 2. Configure the hadoop cluster to set up the necessary parameters
 	resourcemanager_admin=8033		// resourcemanager admin port
 
 	# memory
+        yarn_minimum_mb=1024
 	yarn_maximum_mb=1024			// The maximum amount of physical memory a single task can claim
 	nodemanager_resource_mb=1024		// Node maximum available memory
+        hadoop_heapsize=1024    //  NameNode, Jobtracker, Datanode, Tasktracker, SecondaryNameNode  memory
+        mapreduce_task_mb=1024   // Map Task , Reduce Task memory
+	syn_server=(hserver2 hserver3)    // synchronize other server's hadoop and java
 	===========================================================================================================
 
 
@@ -85,6 +83,8 @@ step 2. Configure the hadoop cluster to set up the necessary parameters
 
 step 3. hadoop init(****)
 	**** Each machine performs the same operation [hserver1, hserver2, hserver3] 
+
+
 	a). create user
 		sh bin/init.sh create-user
 		validate:
@@ -108,6 +108,11 @@ step 3. hadoop init(****)
 		sh bin/init.sh data-dir
 	g). config-hadoop(config hadoop params)
 		sh bin/init.sh config-hadoop
+
+	**** When you are done with hserver1, you can also synchronize the configuration to other servers, including hadoop, Java, and related environment variables.
+	****	sh bin/init.sh synchronization
+	**** The configuration of the other services is synchronized
+
 
 step 4. Switch the user
 	su {your username}   // su hadoop

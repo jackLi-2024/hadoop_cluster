@@ -25,6 +25,9 @@ elif [ "$1" == "config-hadoop" ];then
 
 elif [ "$1" == "hadoop-to-env" ];then
 	bashrc
+
+elif [ "$1" == "synchronization" ] ;then
+    synchronization
 	
 elif [ "$1" == "help" ];then
 	echo "Help:"
@@ -45,6 +48,7 @@ if [ -n "$help" ];then
         echo "    remove-data:          Remove the hadoop data catalog"
         echo "    hadoop-to-env:        Add hadoop to the new user environment variables"
 	echo "    config-hadoop:        config hadoop params"
+        echo "    synchronization:      synchronization hadoop information to other servers"
         echo "    help:                 Get help"
 else
         echo ""
