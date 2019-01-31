@@ -1,6 +1,15 @@
 *** It is better to build a hadoop cluster with more than 2 machines
 
 
+cd hadoop_cluster
+
+Please download hadoop-2.9.2 and jdk1.8.0_171 on baidu disk first
+address: https://pan.baidu.com/s/1G3VWiG1FiZjB42tOrMX_GQ 
+Extract the code: al45 
+
+Unzip the package: tar -xvzf package.tgz
+
+
 step 1. pre-configured
 	
 	ip		hostname
